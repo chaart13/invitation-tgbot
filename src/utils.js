@@ -6,21 +6,24 @@ class Job {
     "https://www.e-uslugi.mazowieckie.pl/delegate/services/guest/subjects/176/timeframes";
 
   static async _callAPI() {
-    let res = await fetch(
-      `${this.API_BASE}/${new Date().toLocaleDateString("sv")}/next/date`,
-      { method: "GET" }
-    );
-    if (!res.ok) {
-      return;
-    }
-    const timestamp = await res.json();
-    console.log(timestamp);
+    try {
+      let res = await fetch(
+        `${this.API_BASE}/${new Date().toLocaleDateString("sv")}/next/date`,
+        { method: "GET" }
+      );
+      if (!res.ok) {
+        return;
+      }
+      const timestamp = await res.json();
 
-    res = await fetch(`${API_BASE}/${timestamp.substring(0, 10)}`, {
-      method: "GET",
-    });
-    const times = await res.json();
-    return times.map((time) => time.dateFrom);
+      res = await fetch(`${this.API_BASE}/${timestamp.substring(0, 10)}`, {
+        method: "GET",
+      });
+      const times = await res.json();
+      return times.map((time) => time.dateFrom);
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   static createJob() {
@@ -56,6 +59,7 @@ class User {
         id: user.id,
         lastSeenDates: user.lastSeenDates,
       }));
+
       if (this.usersBuffer.length) {
         Job.createJob();
       }
@@ -68,16 +72,19 @@ class User {
     const { id, username } = user;
 
     const dbUser = await UsersModel.findOne({ id }).exec();
-    if (!dbUser) {
-      await UsersModel.create({ id, username });
-      this.usersBuffer.push({ id });
+    if (dbUser) {
+      return;
     }
-    Job.createJob();
+
+    await UsersModel.create({ id, username });
+    if (!this.usersBuffer.length) {
+      Job.createJob();
+    }
+    this.usersBuffer.push({ id });
   }
 
   static async unsubscribe(userId) {
     await UsersModel.findOneAndDelete({ id: userId });
-
     this.usersBuffer = this.usersBuffer.filter((user) => user.id !== userId);
 
     if (!this.usersBuffer.length) {

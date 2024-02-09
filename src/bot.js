@@ -4,12 +4,24 @@ const User = require("./utils");
 const bot = new Bot(process.env.TG_BOT_TOKEN);
 
 bot.command("start", async (ctx) => {
-  User.subscribe(ctx.from);
+  try {
+    await User.subscribe(ctx.from);
+  } catch (error) {
+    console.log(error);
+    await ctx.reply("Can't subscribe");
+    return;
+  }
   await ctx.reply("Waiting for a slot to appear...");
 });
 
 bot.command("stop", async (ctx) => {
-  User.unsubscribe(ctx.from.id);
+  try {
+    await User.unsubscribe(ctx.from.id);
+  } catch (error) {
+    console.log(error);
+    await ctx.reply("Can't unsubscribe");
+    return;
+  }
   await ctx.reply("Stopped");
 });
 
